@@ -1,0 +1,30 @@
+version: "3.9"
+
+services:
+  browserless:
+    image: ghcr.io/browserless/chromium:latest
+    ports:
+      - "12355:3000"
+    environment:
+      # Tune these for your load tests:
+      - CONCURRENT=5
+      - QUEUED=10
+      - TIMEOUT=300000
+      # Optional: set TOKEN for auth. If you set it, you'll need to pass token in your client URLs.
+      # - TOKEN=dev-token
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:3000/docs"]
+      interval: 2s
+      timeout: 10s
+      retries: 15
+
+  mcp-server:
+    build: .
+    environment:
+      # Use IPv4 loopback to avoid ::1 IPv6 resolution issues in Node.
+      - BROWSERLESS_WS=ws://127.0.0.1:12355
+      - BROWSERLESS_HTTP=http://127.0.0.1:12355
+      - MCP_ENV=dev
+    depends_on:
+      browserless:
+        condition: service_healthy
